@@ -7,9 +7,6 @@
 
 testcode test;
 
-int counter = 0;
-int x = 0;
-
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);       // baud rate is ignored with Teensy USB ACM i/o
@@ -21,10 +18,10 @@ void setup() {
   delay(3000);   // wait in case serial monitor still opening
 
   test.init();
-  test.testsamplingrate();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  
+  test.testsamplingrate();
+
 }
