@@ -2,6 +2,7 @@
 #define TESTCODE_H
 
 #include <Arduino.h>
+#include "config.h"
 
 // pinout
 #define LEDPIN 13  //define the onboard LEDPIN
