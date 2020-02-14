@@ -13,12 +13,12 @@ int counter = 0;
 
 unsigned int tijd = 0;
 
-void fft::runfft(byte state)
+void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
 {
   sampling_period_us = round(1000000 * (1.0 / SAMPLING_FREQUENCY)); //for the sampling frequency
   while (1)
   {
-    if (tijd + 500 < millis())
+    if (tijd + 1000 < millis())
     { //update every 2 seconds
       for (int i = 0; i < (SAMPLES / 2); i++)
       {
@@ -44,6 +44,7 @@ void fft::runfft(byte state)
 
 void fft::dofft()
 {
+  digitalWrite(CONTROL,HIGH);   //start sweep
   for (int i = 0; i < SAMPLES; i++)
   {
     microseconds = micros(); //Overflows after around 70 minutes!
@@ -55,9 +56,9 @@ void fft::dofft()
     { //To set sampling frequency
     }
   }
-
+  digitalWrite(CONTROL,LOW);   //start sweep
   /*FFT*/
-  FFT.Windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+  FFT.Windowing(vReal, SAMPLES, FFT_WIN_TYP_HANN, FFT_FORWARD);
   FFT.Compute(vReal, vImag, SAMPLES, FFT_FORWARD);
   FFT.ComplexToMagnitude(vReal, vImag, SAMPLES);
   //double peak = FFT.MajorPeak(vReal, SAMPLES, SAMPLING_FREQUENCY);

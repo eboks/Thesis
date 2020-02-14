@@ -2,6 +2,7 @@
 #define MAIN_H
 
 #include <Arduino.h>
+#include <SPI.h>
 
 #include "config.h"
 #include "testcode.h"
