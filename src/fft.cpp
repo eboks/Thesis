@@ -58,7 +58,7 @@ void fft::dofft()
   }
   digitalWrite(CONTROL,LOW);   //start sweep
   /*FFT*/
-  FFT.Windowing(vReal, SAMPLES, FFT_WIN_TYP_HANN, FFT_FORWARD);
+  FFT.Windowing(vReal, SAMPLES, FFT_WIN_TYP_RECTANGLE, FFT_FORWARD);
   FFT.Compute(vReal, vImag, SAMPLES, FFT_FORWARD);
   FFT.ComplexToMagnitude(vReal, vImag, SAMPLES);
   //double peak = FFT.MajorPeak(vReal, SAMPLES, SAMPLING_FREQUENCY);

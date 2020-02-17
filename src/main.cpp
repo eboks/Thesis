@@ -36,10 +36,17 @@ void setup() {
   SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE1)); //check datasheet, max freq 10Mhz, MSBFIRST mode, CPOL=0 and CPHA =1 => mode 1
   digitalWrite(CS,LOW);
   spitransfer(0b0000011010011111);  //control register
-  spitransfer(0b0001001111101000);  //#increments
+
+  /*spitransfer(0b0001001111101000);  //#increments
   spitransfer(0b0010000000100100);  //delta f lower bits
   spitransfer(0b0011000000000000);  //delta f higher bits
-  spitransfer(0b0110000001100100);  //increment interval
+  spitransfer(0b0110000001100100);  //increment interval*/
+
+  spitransfer(0b0001111111111111);  //#increments
+  spitransfer(0b0010000000001000);  //delta f lower bits
+  spitransfer(0b0011000000000000);  //delta f higher bits
+  spitransfer(0b0110000000110010);  //increment interval
+
   spitransfer(0b1000000000000000);  //burst interval NOT NEEDED
   spitransfer(0b1100001000000000);  //start f lower bits
   spitransfer(0b1101000000001000);  //start f higher bits
@@ -72,8 +79,8 @@ void loop() {
 }
 
 void spitransfer(int code){
-  //digitalWrite(CS,LOW);
+  digitalWrite(CS,LOW);
   SPI.transfer16(code);
- // digitalWrite(CS,HIGH);
+  digitalWrite(CS,HIGH);
   //delay(1);
 }
