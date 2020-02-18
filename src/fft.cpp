@@ -24,7 +24,7 @@ void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
       {
         vavg[i] = 0;
       }
-      for (int i = 0; i < 10; i++)
+      for (int i = 0; i < AVERAGE; i++)
       { //average over 10 times
         dofft();
         for (int j = 0; j < (SAMPLES / 2); j++)
@@ -34,7 +34,7 @@ void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
       }
       for (int i = 0; i < (SAMPLES / 2); i++)
       {
-        vReal[i] = vavg[i] / 10;
+        vReal[i] = vavg[i] / AVERAGE;
       }
       tijd = millis();
       fftPlot();
