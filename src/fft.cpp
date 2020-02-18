@@ -44,7 +44,7 @@ void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
 
 void fft::dofft()
 {
-  digitalWrite(CONTROL,HIGH);   //start sweep
+  //digitalWrite(CONTROL,HIGH);   //start sweep
   for (int i = 0; i < SAMPLES; i++)
   {
     microseconds = micros(); //Overflows after around 70 minutes!
@@ -56,7 +56,7 @@ void fft::dofft()
     { //To set sampling frequency
     }
   }
-  digitalWrite(CONTROL,LOW);   //start sweep
+  //digitalWrite(CONTROL,LOW);   //start sweep
   /*FFT*/
   FFT.Windowing(vReal, SAMPLES, FFT_WIN_TYP_RECTANGLE, FFT_FORWARD);
   FFT.Compute(vReal, vImag, SAMPLES, FFT_FORWARD);

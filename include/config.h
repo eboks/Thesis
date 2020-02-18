@@ -6,7 +6,7 @@
 */
 
 // general settings
-#define FFT_ENABLE true //enable to run fft
+#define FFT_ENABLE false //enable to run fft
 #define PROGRAM_ENABLE true // enable programming IC mode
 
 //fft configurations
