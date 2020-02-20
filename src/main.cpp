@@ -14,28 +14,31 @@ int buttonState = 0;         // current state of the button
 int lastButtonState = 0;     // previous state of the button
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(115200);       // baud rate is ignored with Teensy USB ACM i/o
   pinMode(LEDPIN, OUTPUT);  
   pinMode(BUTTONPIN, INPUT);
   pinMode(CONTROL, OUTPUT);   
-  pinMode(CS, OUTPUT);    
+  pinMode(CS1, OUTPUT);    
   pinMode(ENDSWEEP, OUTPUT);   
   pinMode(VERZENDCONTROL, OUTPUT);   
-  pinMode(ONTVANGCONTROL, INPUT);   
- 
+  pinMode(ONTVANGCONTROL, INPUT);  
+  pinMode(CE_, OUTPUT);
+  pinMode(CSN, OUTPUT); 
+  pinMode(9,OUTPUT);
+  pinMode(6,OUTPUT);
+  pinMode(8,OUTPUT);
 
   pinMode(ANALOG9, INPUT);
   analogReadRes(10);          // set ADC resolution to this many bits
   analogReadAveraging(1);    // average this many readings
   
-  digitalWrite(CS,HIGH);
+  digitalWrite(CS1,HIGH);
   digitalWrite(LEDPIN,HIGH);   
   delay(3000);   // LED on for 3 second
   digitalWrite(LEDPIN,LOW);    
   delay(1000);   // wait in case serial monitor still opening
 
-  #if PROGRAM_ENABLE
+  #ifndef FFT_ENABLE
   /*SPI program here*/  //MOSI to SDATA, SS to FSYNC,SCLK to SCLK to program!!
   //SPISettings mySettting(10000000, MSBFIRST, SPI_MODE1) //check datasheet, max freq 10Mhz, MSBFIRST mode, CPOL=0 and CPHA =1 => mode 1
   digitalWrite(CONTROL,LOW);   //cet CTRL pin low
@@ -61,58 +64,61 @@ void setup() {
   SPI.endTransaction();
   SPI.end();
   #endif
-  digitalWrite(CONTROL,HIGH);   //end sweep
-  delay(1);
-  digitalWrite(CONTROL,LOW);   //end sweep
+
+  /*initMaster();
+  while(checkRFModuleConnection()==false){
+    digitalWrite(9,HIGH);   
+    delay(1000);   // LED on for 1 second
+    digitalWrite(9,LOW); 
+    delay(1000);
+    }//there is a problem with the SPI
+  initRFRegisters();*/
   }
 
 void loop() {
-  // put your main code here, to run repeatedly:
 
-  /*digitalWrite(CONTROL,HIGH);   
-  digitalWrite(CONTROL,LOW);   
-  increment++;
-  timing = micros(); //Overflows after around 70 minutes!
-  while (micros() < (timing + CLK_period_us))
-  { //To set sampling frequency
-    }
-  if(increment > 4095){
-    digitalWrite(ENDSWEEP,HIGH);   //end sweep
-    delay(1000);
-    digitalWrite(ENDSWEEP,LOW);
-    increment = 0;
-  }*/
-
-  #if FFT_ENABLE
+  #ifdef FFT_ENABLE
   myfft.runfft(0);
   #endif
-
-  #if PROGRAM_ENABLE
-  if(digitalRead(ONTVANGCONTROL)==HIGH){
-    digitalWrite(CONTROL, HIGH);
-  }
-  else{
-        digitalWrite(CONTROL, LOW);
-  }
-  /*buttonState = digitalRead(ONTVANGCONTROL);
-  if (buttonState != lastButtonState) {
-    if (buttonState == HIGH) {
-      digitalWrite(CONTROL, HIGH);
-      digitalWrite(CONTROL, LOW);
+/*
+  #ifndef FFT_ENABLE
+    
+    setRFMode(RX_MODE);
+    Message response;
+    response.byte1=2;  
+    response.byte2=4;      
+    response.byte3=6;      
+    response.byte4=8;
+    response.byte5=10;
+    sendData(response);
+    
+    while(1){
+        if((checkStatus()>>6)==1){          //there is new data in the RX FIFO
+            clearRX_DR();
+            Message message=readData();
+            flush();
+            if(message.byte1==1){
+              digitalWrite(VERZENDCONTROL, HIGH);
+              delay(1);
+              digitalWrite(VERZENDCONTROL, LOW);
+              delay(1);
+            }
+            sendData(response);
+        }
+        else if((checkStatus()>>5)==1){     //succesfully sended the data
+            clearTX_DS();
+        }
+        else if((checkStatus()>>4)==1){     //maximum number of retries is reached
+            clearMAX_RT();
+            //sendData(response);             //try again
+        }
     }
-    // Delay a little bit to avoid bouncing
-    delay(2);
-  }
-  lastButtonState = buttonState;*/
-  #endif
-   
-  //delay(1000);  //Repeat the process every second OR:
-  //while(1);       //Run code once
+  #endif 
+*/
 }
 
 void spitransfer(int code){
   digitalWrite(CS1,LOW);
   SPI.transfer16(code);
   digitalWrite(CS1,HIGH);
-  //delay(1);
 }

@@ -7,5 +7,6 @@
 #include "config.h"
 #include "testcode.h"
 #include "fft.h"
+#include "RFmethods.h"
 
 #endif

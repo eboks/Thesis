@@ -6,17 +6,12 @@
 */
 
 // general settings
-#define FFT_ENABLE true //enable to run fft
-#define PROGRAM_ENABLE false // enable programming IC mode
+#define FFT_ENABLE  //enable to run fft
 
 //fft configurations
 #define SAMPLES 4096            //Must be a power of 2
 #define SAMPLING_FREQUENCY 200000  //total sampling time = SAMPLES/SAMPLING_FREQUENCY
-<<<<<<< HEAD
-#define AVERAGE 1                   //total amount of averaging
-=======
-#define AVERAGE 1                   //total averaging
->>>>>>> bedba2a0dd56173b01cc81e04e8e3a9556a0fdc9
+#define AVERAGE 10                   //total averaging
 
 // I/O pins declarations
 #define LEDPIN 13  //define the onboard LEDPIN
@@ -30,6 +25,7 @@
 #define STOP 0  
 #define VERZENDCONTROL 7  //pin to forward the control  
 #define ONTVANGCONTROL 17  //pin to forward receive the control  
-
+#define CSN                 21
+#define CE_                 22
 
 #endif
