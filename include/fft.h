@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #include "config.h"
 #include <arduinoFFT.h>
+#include <nRF24L01.h>
+#include <RF24.h>
 
 class fft{
 
@@ -16,5 +18,7 @@ private: void dofft();
 // Print the results to plot it in serialplot
 private: void fftPlot();
 
+// update the output
+private: void updateLED();
 };
 #endif 
