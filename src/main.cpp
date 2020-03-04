@@ -6,63 +6,84 @@ fft myfft; //Create an instance of the class fft
 
 void spitransfer(int code);
 
-RF24 radiomain(CE, CSN); // CE, CSN
-const byte thisSlaveAddress[5] = {'R','x','A','A','A'};
+RF24 radiomain(CESWEEP, CSNSWEEP); // CE, CSN
+const byte thisSlaveAddress[5] = {'R', 'x', 'A', 'A', 'A'};
 char startsweepmain[10] = "test";
+
+void blink() {
+  digitalWrite(INTERRUPT, HIGH);
+  delay(1);
+  digitalWrite(INTERRUPT, LOW);
+}
 
 void setup()
 {
   Serial.begin(115200); // baud rate is ignored with Teensy USB ACM i/o
   pinMode(LEDPIN, OUTPUT);
+  pinMode(LEDPIN2, OUTPUT);
   pinMode(CONTROL, OUTPUT);
   pinMode(CS1, OUTPUT);
-  pinMode(16, OUTPUT);
-  pinMode(17, OUTPUT);
-  pinMode(18, OUTPUT);
-  pinMode(19, OUTPUT);
-  pinMode(20, OUTPUT);
-  pinMode(21, OUTPUT);
-  pinMode(CE, OUTPUT);
-  pinMode(CSN, OUTPUT);
+  pinMode(0, OUTPUT);
+  pinMode(1, OUTPUT);
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+  pinMode(7, OUTPUT);
+  pinMode(TRISTATE, OUTPUT);
+  pinMode(CESWEEP, OUTPUT);
+  pinMode(CSNSWEEP, OUTPUT);
+  pinMode(CESENSE, OUTPUT);
+  pinMode(CSNSENSE, OUTPUT);
   pinMode(SAMPLE, INPUT);
+  pinMode(SYNCOUT, OUTPUT);
+  pinMode(BUTTONINDICATOR, OUTPUT);
+  pinMode(SYNCOUT, INPUT);
+  pinMode(INTERRUPT, OUTPUT);
 
-  pinMode(ANALOG9, INPUT);
+  digitalWrite(TRISTATE, HIGH);
+
+  pinMode(ANALOG3, INPUT);
   analogReadRes(10);      // set ADC resolution to this many bits
   analogReadAveraging(1); // average this many readings
 
-  digitalWrite(CS1, HIGH);
   digitalWrite(LEDPIN, HIGH);
   delay(3000); // LED on for 3 second
   digitalWrite(LEDPIN, LOW);
   delay(1000); // wait in case serial monitor still opening
 
 #ifndef FFT_ENABLE
+  digitalWrite(CS1, HIGH);
   digitalWrite(CONTROL, LOW); //cet CTRL pin low
   SPI.begin();
   SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE1)); //check datasheet, max freq 10Mhz, MSBFIRST mode, CPOL=0 and CPHA =1 => mode 1
   digitalWrite(CS1, LOW);
   spitransfer(0b0000011010011111); //control register
 
-  spitransfer(0b0001111111111111); //#increments
-  spitransfer(0b0010000000001000); //delta f lower bits
+  spitransfer(0b0001101111111111); //#increments
+  spitransfer(0b0010000000000011); //delta f lower bits
   spitransfer(0b0011000000000000); //delta f higher bits
-  spitransfer(0b0110000000110010); //increment interval
+  spitransfer(0b0110000011111010); //increment interval
 
   spitransfer(0b1000000000000000); //burst interval NOT NEEDED
-  spitransfer(0b1100001000000000); //start f lower bits
-  spitransfer(0b1101000000001000); //start f higher bits
+
+  spitransfer(0b1100111100000000); //start f lower bits  100 1110 0010 0000 //25-50kHz
+  spitransfer(0b1101000000000001); //start f higher bits
+
   digitalWrite(CS1, HIGH);
   SPI.endTransaction();
   SPI.end();
 
   radiomain.begin();
-  radiomain.setDataRate( RF24_2MBPS );
-  radiomain.setPALevel(RF24_PA_HIGH);
-  radiomain.setChannel(10);  
+  radiomain.setDataRate(RF24_2MBPS);
+  radiomain.setPALevel(RF24_PA_MAX);
+  radiomain.setChannel(10);
   radiomain.openReadingPipe(1, thisSlaveAddress); //Setting the address at which we will receive the data
   //radiomain.setPALevel(RF24_PA_MAX);     //You can set this as minimum or maximum depending on the distance between the transmitter and receiver.
-  radiomain.startListening();            //This sets the module as receiver
+  radiomain.startListening(); //This sets the module as receiver
 
+  attachInterrupt(digitalPinToInterrupt(SYNCOUT), blink, RISING);
 #endif
 }
 
@@ -72,20 +93,25 @@ void loop()
   myfft.runfft(0);
 #endif
 #ifndef FFT_ENABLE
-  if(radiomain.available()) //Looking for the data.
+
+  if (radiomain.available()) //Looking for the data.
   {
-    digitalWrite(CONTROL,HIGH);
+    digitalWrite(CONTROL, HIGH);
     delay(1);
-    digitalWrite(CONTROL,LOW);
+    digitalWrite(CONTROL, LOW);
     radiomain.read(&startsweepmain, sizeof(startsweepmain));
   }
 
 #endif
 }
 
+#ifndef FFT_ENABLE
 void spitransfer(int code)
 {
   digitalWrite(CS1, LOW);
   SPI.transfer16(code);
   digitalWrite(CS1, HIGH);
 }
+
+
+#endif

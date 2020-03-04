@@ -8,26 +8,58 @@ unsigned long microseconds;
 
 double vReal[SAMPLES];
 double vImag[SAMPLES];
-//double vavg[SAMPLES];
+double vavg[SAMPLES];
 
-double samples[410][AMOUNT_ARRAY];
+double samples[AMOUNT_FREQ_BINS][AMOUNT_ARRAY][SAMPLES_PER_OUTPUT];
 int counter = 0;
-int minimum = 0;
+int counter2 = 0;
+int minimum1 = 0;
+int minimum2 = 0;
 int vorige = 0;
 int output = 0;
 int plotinterval = 0;
-int aantalkeren=0;
+int aantalkeren = 0;
+double totalenergy = 0;
+double demping = 0;
+double PWM_value = 255;
+double moving_avg[AMOUNT_MOVING_AVG];
+int moving_pos = 0;
+double totaal = 0;
+
+int teller = 0;
+
+boolean takesample = false;
+int sample_number = 0;
 
 unsigned int tijd = 0;
 
-RF24 radio(CE, CSN); // CE, CSN
+RF24 radio(CESENSE, CSNSENSE); // CE, CSN
 const byte slaveAddress[5] = {'R', 'x', 'A', 'A', 'A'};
 char startsweep[10] = "hey";
 void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
 {
+  /*while(1){
+    analogWrite(LEDPIN2,0);
+    delay(2000);
+    analogWrite(LEDPIN2,10);
+    delay(2000);
+    analogWrite(LEDPIN2,20);
+    delay(2000);
+    analogWrite(LEDPIN2,50);
+    delay(2000);
+    analogWrite(LEDPIN2,100);
+    delay(2000);
+    analogWrite(LEDPIN2,150);
+    delay(2000);
+    analogWrite(LEDPIN2,200);
+    delay(2000);
+    analogWrite(LEDPIN2,255);
+    delay(2000);
+  }*/
+
   //RF SETTINGS
   radio.begin(); //Starting the Wireless communication
-  radio.setPALevel(RF24_PA_HIGH);
+  radio.setPALevel(RF24_PA_MAX);
   radio.setDataRate(RF24_2MBPS);
   radio.setChannel(10);
   radio.setRetries(3, 10);             // delay, count
@@ -36,10 +68,17 @@ void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
 
   for (int j = 0; j < AMOUNT_ARRAY; j++)
   {
-    for (int i = 0; i < 410; i++)
+    for (int i = 0; i < AMOUNT_FREQ_BINS; i++)
     {
-      samples[i][j]=1000000;
+      for (int k = 0; k < SAMPLES_PER_OUTPUT; k++)
+      {
+        samples[i][j][k] = -1000000;
+      }
     }
+  }
+
+  for(int i = 0; i<AMOUNT_MOVING_AVG;i++){
+    moving_avg[i]=0;
   }
 
   sampling_period_us = round(1000000 * (1.0 / SAMPLING_FREQUENCY)); //for the sampling frequency
@@ -69,8 +108,7 @@ void fft::dofft()
   for (int i = 0; i < SAMPLES; i++)
   {
     microseconds = micros(); //Overflows after around 70 minutes!
-
-    vReal[i] = analogRead(ANALOG9);
+    vReal[i] = analogRead(ANALOG3);
     vImag[i] = 0;
     while (micros() < (microseconds + sampling_period_us))
     { //To set sampling frequency
@@ -84,81 +122,204 @@ void fft::dofft()
 
 void fft::fftPlot()
 {
+  //teller = 0;
   for (int i = 0; i < (SAMPLES / 2); i++)
   {
     /*View all these three lines in serial terminal to see which frequencies has which amplitudes*/
     double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
-    if (frequency < 41000)
-    {                              //only plot the usefull range
-      Serial.println(vReal[i], 1); //View only this line in serial plotter to visualize the bins, 1 is 1 number after the colon
+    if (frequency < 80000) //840 samples bij 41000 || 1639  bij 80000
+    {                      //only plot the usefull range
+      //Serial.print(i);
+      //Serial.print(": ");
+      //Serial.println(vReal[i], 1); //View only this line in serial plotter to visualize the bins, 1 is 1 number after the colon
+      //teller++;
     }
   }
+  //Serial.println(teller);
 }
 
 void fft::updateLED()
 {
-  if (digitalRead(SAMPLE) && millis() > knoptiming + KNOPDEBOUNCE)
+  if (millis() > knoptiming + KNOPDEBOUNCE)
+  {
+    digitalWrite(BUTTONINDICATOR, LOW);
+  }
+  if (digitalRead(SAMPLE) && (millis() > knoptiming + KNOPDEBOUNCE) && takesample == false)
+  {
+    digitalWrite(BUTTONINDICATOR, HIGH);
+    takesample = true;
+    sample_number = 0;
+  }
+  if (takesample)
   {
     knoptiming = millis();
-    int hoeveelste = 0;
+#ifndef DEMPING
     for (int i = 0; i < (SAMPLES / 2); i++)
     {
       double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
-      if (frequency > 20000 && frequency < 40000)
+      if (frequency > MINFREQ && frequency < MAXFREQ)
       { //410 frequency bins!!
-        samples[hoeveelste][counter] = vReal[i];
-        hoeveelste++;
+        vavg[i] += vReal[i];
       }
     }
-    counter++;
-    if (counter > AMOUNT_ARRAY - 1)
+    if (sample_number >= AVERAGE_SAMPLES)
     {
-      counter = 0;
-    }
-  }
-  else
-  {
-    double correlatie[AMOUNT_ARRAY];
-    for (int k = 0; k < AMOUNT_ARRAY; k++)
-    {
-      correlatie[k] = 0;
       int hoeveelste = 0;
-      double teller=0;
-      double noemer1=0;
-      double noemer2=0;
       for (int i = 0; i < (SAMPLES / 2); i++)
       {
         double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
-        if (frequency > 20000 && frequency < 40000)
+        if (frequency > MINFREQ && frequency < MAXFREQ)
         { //410 frequency bins!!
-          teller += samples[hoeveelste][k]*vReal[i];
-          noemer1 += samples[hoeveelste][k]*samples[hoeveelste][k];
-          noemer2 += vReal[i]*vReal[i];
+          samples[hoeveelste][counter][counter2] = vavg[i] / AVERAGE_SAMPLES;
           hoeveelste++;
         }
       }
-      correlatie[k]= teller/sqrt(noemer1*noemer2);
-    } 
-    digitalWrite(output + 16, LOW);
-    minimum = 0;
-    for (int k = 0; k < AMOUNT_ARRAY; k++)
-    {
-      if (correlatie[k] > correlatie[minimum])
+      takesample = false;
+      counter2++;
+      if (counter2 >= SAMPLES_PER_OUTPUT)
       {
-        minimum = k;
+        counter++;
+        counter2 = 0;
+      }
+      if (counter >= AMOUNT_ARRAY)
+      {
+        counter = 0;
       }
     }
-    if(minimum==vorige){
+    sample_number++;
+#endif
+
+#ifdef DEMPING
+    int hoeveelste = 0;
+    totalenergy = 0;
+    for (int i = 0; i < (SAMPLES / 2); i++)
+    {
+      double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
+      if (frequency > MINFREQ && frequency < MAXFREQ)
+      { //410 frequency bins!!
+        samples[hoeveelste][0][0] = vReal[i];
+        //if (vReal[i] >= MIN_AMPLITUDE)
+        //{
+          totalenergy += vReal[i];
+       // }
+        hoeveelste++;
+      }
+    }
+    takesample = false;
+#endif
+  }
+  else
+  {
+#ifndef DEMPING
+    double correlatie[AMOUNT_ARRAY][SAMPLES_PER_OUTPUT];
+    for (int k = 0; k < AMOUNT_ARRAY; k++)
+    {
+      for (int j = 0; j < SAMPLES_PER_OUTPUT; j++)
+      {
+        correlatie[k][j] = 0;
+        int hoeveelste = 0;
+        double teller = 0;
+        double noemer1 = 0;
+        double noemer2 = 0;
+        for (int i = 0; i < (SAMPLES / 2); i++)
+        {
+          double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
+          if (frequency > MINFREQ && frequency < MAXFREQ)
+          { //410 frequency bins bij 20-40kHz!!
+            if (samples[hoeveelste][0][0] >= MIN_AMPLITUDE)
+            {
+              teller += samples[hoeveelste][k][j] * vReal[i];
+              noemer1 += samples[hoeveelste][k][j] * samples[hoeveelste][k][j];
+              noemer2 += vReal[i] * vReal[i];
+            }
+            hoeveelste++;
+          }
+        }
+        correlatie[k][j] = teller / sqrt(noemer1 * noemer2); //bereken de correlatie coëfficient
+      }
+    }
+    digitalWrite(output, LOW);
+    minimum1 = 0;
+    minimum2 = 0;
+    for (int k = 0; k < AMOUNT_ARRAY; k++)
+    {
+      for (int j = 0; j < SAMPLES_PER_OUTPUT; j++)
+      {
+        if (correlatie[k][j] > correlatie[minimum1][minimum2])
+        {
+          minimum1 = k;
+          minimum2 = j;
+        }
+      }
+    }
+    if (minimum1 == vorige && correlatie[minimum1][minimum2] > MINIMUM_CORRELATION)
+    {
       aantalkeren++;
     }
-    else{
+    else if (correlatie[minimum1][minimum2] > MINIMUM_CORRELATION)
+    {
       aantalkeren = 0;
-      vorige = minimum;
+      vorige = minimum1;
     }
-    if(aantalkeren==AMOUNT_SAME){
-      output = minimum;
+    if (aantalkeren == AMOUNT_SAME)
+    {
+      output = minimum1;
       aantalkeren = 0;
     }
-    digitalWrite(output + 16, HIGH);
+    digitalWrite(output, HIGH);
   }
 }
+
+#endif
+
+#ifdef DEMPING
+int hoeveelste = 0;
+double energy = 0;
+for (int i = 0; i < (SAMPLES / 2); i++)
+{
+  double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
+  if (frequency > MINFREQ && frequency < MAXFREQ)
+  { 
+    //if (samples[hoeveelste][0][0] >= MIN_AMPLITUDE)
+    //{
+      energy += vReal[i];
+    //}
+    hoeveelste++;
+  }
+}
+
+totaal = 0;
+demping = energy / totalenergy;
+double tussen = demping;
+Serial.println(demping);
+moving_avg[moving_pos] = tussen;
+
+moving_pos++;
+if (moving_pos >= AMOUNT_MOVING_AVG) {
+    moving_pos = 0;
+}
+
+for(int i = 0; i<AMOUNT_MOVING_AVG;i++){
+    totaal += moving_avg[moving_pos];
+  }
+
+
+PWM_value = totaal/AMOUNT_MOVING_AVG;
+if (PWM_value >= 1)
+{
+  PWM_value=1;
+}
+int out = round(abs(log10(PWM_value)*255));
+if (out >= 255)
+{
+  out=255;
+}
+analogWrite(LEDPIN2,out);
+}
+}
+//1 hand: 80
+//2 hand: 68
+//3 hand: 60
+//4 hand: 55
+//4 hand hard knijpen 50
+#endif
