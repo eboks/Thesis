@@ -38,25 +38,6 @@ const byte slaveAddress[5] = {'R', 'x', 'A', 'A', 'A'};
 char startsweep[10] = "hey";
 void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
 {
-  /*while(1){
-    analogWrite(LEDPIN2,0);
-    delay(2000);
-    analogWrite(LEDPIN2,10);
-    delay(2000);
-    analogWrite(LEDPIN2,20);
-    delay(2000);
-    analogWrite(LEDPIN2,50);
-    delay(2000);
-    analogWrite(LEDPIN2,100);
-    delay(2000);
-    analogWrite(LEDPIN2,150);
-    delay(2000);
-    analogWrite(LEDPIN2,200);
-    delay(2000);
-    analogWrite(LEDPIN2,255);
-    delay(2000);
-  }*/
-
   //RF SETTINGS
   radio.begin(); //Starting the Wireless communication
   radio.setPALevel(RF24_PA_MAX);
@@ -77,8 +58,9 @@ void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
     }
   }
 
-  for(int i = 0; i<AMOUNT_MOVING_AVG;i++){
-    moving_avg[i]=0;
+  for (int i = 0; i < AMOUNT_MOVING_AVG; i++)
+  {
+    moving_avg[i] = 0;
   }
 
   sampling_period_us = round(1000000 * (1.0 / SAMPLING_FREQUENCY)); //for the sampling frequency
@@ -92,10 +74,17 @@ void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
       {
         dofft();
         updateLED();
-        if (plotinterval >= 25)
+        if (plotinterval >= 25) //plot the values once in 25 times;
         {
           plotinterval = 0;
-          fftPlot();
+          fftPlot();/*
+          averageEnergy();
+          double peak = FFT.MajorPeak(vReal, SAMPLES, SAMPLING_FREQUENCY);
+          Serial.print("piek: ");
+          Serial.println(peak);
+          int bin = (peak*SAMPLES)/SAMPLING_FREQUENCY;
+          Serial.print("sterkte: ");
+          Serial.println(vReal[bin]);*/
         }
       }
       plotinterval++;
@@ -131,7 +120,7 @@ void fft::fftPlot()
     {                      //only plot the usefull range
       //Serial.print(i);
       //Serial.print(": ");
-      //Serial.println(vReal[i], 1); //View only this line in serial plotter to visualize the bins, 1 is 1 number after the colon
+      Serial.println(vReal[i], 1); //View only this line in serial plotter to visualize the bins, 1 is 1 number after the colon
       //teller++;
     }
   }
@@ -140,6 +129,10 @@ void fft::fftPlot()
 
 void fft::updateLED()
 {
+  /*for (int i = 0; i < (SAMPLES / 2); i++)
+  {
+    vReal[i] = 20 * log10(vReal[i] / 1500);
+  }*/
   if (millis() > knoptiming + KNOPDEBOUNCE)
   {
     digitalWrite(BUTTONINDICATOR, LOW);
@@ -200,8 +193,8 @@ void fft::updateLED()
         samples[hoeveelste][0][0] = vReal[i];
         //if (vReal[i] >= MIN_AMPLITUDE)
         //{
-          totalenergy += vReal[i];
-       // }
+        totalenergy += vReal[i];
+        // }
         hoeveelste++;
       }
     }
@@ -279,10 +272,10 @@ for (int i = 0; i < (SAMPLES / 2); i++)
 {
   double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
   if (frequency > MINFREQ && frequency < MAXFREQ)
-  { 
+  {
     //if (samples[hoeveelste][0][0] >= MIN_AMPLITUDE)
     //{
-      energy += vReal[i];
+    energy += vReal[i];
     //}
     hoeveelste++;
   }
@@ -291,35 +284,48 @@ for (int i = 0; i < (SAMPLES / 2); i++)
 totaal = 0;
 demping = energy / totalenergy;
 double tussen = demping;
-Serial.println(demping);
+//Serial.println(demping);
 moving_avg[moving_pos] = tussen;
 
 moving_pos++;
-if (moving_pos >= AMOUNT_MOVING_AVG) {
-    moving_pos = 0;
+if (moving_pos >= AMOUNT_MOVING_AVG)
+{
+  moving_pos = 0;
 }
 
-for(int i = 0; i<AMOUNT_MOVING_AVG;i++){
-    totaal += moving_avg[moving_pos];
-  }
+for (int i = 0; i < AMOUNT_MOVING_AVG; i++)
+{
+  totaal += moving_avg[moving_pos];
+}
 
-
-PWM_value = totaal/AMOUNT_MOVING_AVG;
+PWM_value = totaal / AMOUNT_MOVING_AVG;
 if (PWM_value >= 1)
 {
-  PWM_value=1;
+  PWM_value = 1;
 }
-int out = round(abs(log10(PWM_value)*255));
+int out = round(abs(log10(PWM_value) * 255)); //kan delen door log10(a) zodat bovenste log loga() word https://www.instagram.com/p/BthYeq_BsfK/?utm_source=ig_share_sheet&igshid=1fo84lib8xveu
 if (out >= 255)
 {
-  out=255;
+  out = 255;
 }
-analogWrite(LEDPIN2,out);
+analogWrite(LEDPIN2, out);
 }
 }
-//1 hand: 80
-//2 hand: 68
-//3 hand: 60
-//4 hand: 55
-//4 hand hard knijpen 50
 #endif
+
+void fft::averageEnergy()
+{
+  double gemiddelddb = 0;
+  int N = 0;
+  for (int i = 0; i < (SAMPLES / 2); i++)
+  {
+    double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
+    if (frequency > MINFREQ && frequency < MAXFREQ)
+    {
+      gemiddelddb += vReal[i];
+      N++;
+    }
+  }
+  gemiddelddb /= N;
+  //Serial.println(gemiddelddb);
+}

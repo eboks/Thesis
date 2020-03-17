@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 // general settings
-#define FFT_ENABLE  //enable to run fft
+//#define FFT_ENABLE  //enable to run fft
 #define DEMPING    //energy mode
 
 //fft configurations
@@ -10,7 +10,7 @@
 #define SAMPLING_FREQUENCY 200000  //total sampling time = SAMPLES/SAMPLING_FREQUENCY
 #define AVERAGE 1                   //total averaging
 #define AMOUNT_ARRAY 7              //amount of outputs for classification
-#define TIME_BETWEEN_FFT 30       //amount of miliseconds between each fft
+#define TIME_BETWEEN_FFT 50       //amount of miliseconds between each fft
 #define KNOPDEBOUNCE 1100           //minimum amount of time between button pushes
 #define AMOUNT_SAME 2               //the amount of times that the outcome has to be te same before changing the output
 #define MINIMUM_CORRELATION 0.7     //the minimum amount of correlation for a sample to be valid

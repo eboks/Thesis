@@ -20,5 +20,9 @@ private: void fftPlot();
 
 // update the output
 private: void updateLED();
+
+// update the output
+private: void averageEnergy();
+
 };
 #endif 

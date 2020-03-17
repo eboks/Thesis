@@ -9,8 +9,10 @@ void spitransfer(int code);
 RF24 radiomain(CESWEEP, CSNSWEEP); // CE, CSN
 const byte thisSlaveAddress[5] = {'R', 'x', 'A', 'A', 'A'};
 char startsweepmain[10] = "test";
+unsigned long currenttime = 0;
 
-void blink() {
+void blink()
+{
   digitalWrite(INTERRUPT, HIGH);
   delay(1);
   digitalWrite(INTERRUPT, LOW);
@@ -42,7 +44,7 @@ void setup()
   pinMode(SYNCOUT, INPUT);
   pinMode(INTERRUPT, OUTPUT);
 
-  digitalWrite(TRISTATE, HIGH);
+  digitalWrite(TRISTATE, HIGH); //has to be high for the oscillator to be on
 
   pinMode(ANALOG3, INPUT);
   analogReadRes(10);      // set ADC resolution to this many bits
@@ -54,6 +56,7 @@ void setup()
   delay(1000); // wait in case serial monitor still opening
 
 #ifndef FFT_ENABLE
+  digitalWrite(TRISTATE, HIGH); //has to be high for the oscillator to be on
   digitalWrite(CS1, HIGH);
   digitalWrite(CONTROL, LOW); //cet CTRL pin low
   SPI.begin();
@@ -62,14 +65,18 @@ void setup()
   spitransfer(0b0000011010011111); //control register
 
   spitransfer(0b0001101111111111); //#increments
+  /*spitransfer(0b0010000000000011); //delta f lower bits
+  spitransfer(0b0011000000000000); //delta f higher bits*/
   spitransfer(0b0010000000000011); //delta f lower bits
   spitransfer(0b0011000000000000); //delta f higher bits
-  spitransfer(0b0110000011111010); //increment interval
+  spitransfer(0b0110000101011010); //increment interval
 
   spitransfer(0b1000000000000000); //burst interval NOT NEEDED
 
-  spitransfer(0b1100111100000000); //start f lower bits  100 1110 0010 0000 //25-50kHz
-  spitransfer(0b1101000000000001); //start f higher bits
+  spitransfer(0b1100011100000000); //start f lower bits  100 1110 0010 0000 //25-50kHz
+  spitransfer(0b1101000000000001);
+  /*spitransfer(0b1100111100000000); //start f lower bits  100 1110 0010 0000 //25-50kHz
+  spitransfer(0b1101000000000001); //start f higher bits*/
 
   digitalWrite(CS1, HIGH);
   SPI.endTransaction();
@@ -100,6 +107,17 @@ void loop()
     delay(1);
     digitalWrite(CONTROL, LOW);
     radiomain.read(&startsweepmain, sizeof(startsweepmain));
+    currenttime = millis();
+  }
+  else if (currenttime + 500 < millis())
+  {
+    radiomain.begin();
+    radiomain.setDataRate(RF24_2MBPS);
+    radiomain.setPALevel(RF24_PA_MAX);
+    radiomain.setChannel(10);
+    radiomain.openReadingPipe(1, thisSlaveAddress); //Setting the address at which we will receive the data
+    radiomain.startListening(); //This sets the module as receiver
+    currenttime = millis();
   }
 
 #endif
@@ -112,6 +130,5 @@ void spitransfer(int code)
   SPI.transfer16(code);
   digitalWrite(CS1, HIGH);
 }
-
 
 #endif
