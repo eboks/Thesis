@@ -2,8 +2,10 @@
 #define CONFIG_H
 
 // general settings
-//#define FFT_ENABLE  //enable to run fft
-#define DEMPING    //energy mode
+//#define SWEEP  //Program sweep module
+//#define SENSE  //Program sense module
+//define CENTRAL  //Program central module
+//#define DEMPING    //energy mode
 
 //fft configurations
 #define SAMPLES 4096            //Must be a power of 2
@@ -24,18 +26,17 @@
 
 
 // I/O pins declarations
-#define LEDPIN 13  //define the onboard LEDPIN
+#define LEDPIN 22  //define the pin we use as output for the damping
 #define ANALOG3 17  //define analog read 9 pin
 #define CONTROL 4  //CTRL pin for waveform IC
 #define CS1 6     //CS pin of SPI
-#define SAMPLE 8  //pin for taking samples
+#define SAMPLE 8  //input pin for button to make a sample
 #define CESWEEP 16     //CE pin of RF
 #define CSNSWEEP 15     //CSN pin of 
 #define CESENSE 10     //CE pin of RF
 #define CSNSENSE 16     //CSN pin of RF
 #define BUTTONINDICATOR 0  //indicator LED
-#define TRISTATE 23
-#define SYNCOUT 22
-#define INTERRUPT 3
-#define LEDPIN2 22
+#define TRISTATE 23         //has to be high for the sweep oscillator to be on
+#define SYNCOUT 22          //needed to end the sweep
+#define INTERRUPT 3         //needed to end the sweep
 #endif

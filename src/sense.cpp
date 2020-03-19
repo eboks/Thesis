@@ -1,4 +1,4 @@
-#include "fft.h"
+#include "sense.h"
 
 arduinoFFT FFT = arduinoFFT();
 
@@ -36,8 +36,29 @@ unsigned int tijd = 0;
 RF24 radio(CESENSE, CSNSENSE); // CE, CSN
 const byte slaveAddress[5] = {'R', 'x', 'A', 'A', 'A'};
 char startsweep[10] = "hey";
-void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
+
+void sense::setup()
 {
+  pinMode(LEDPIN, OUTPUT);
+  pinMode(CONTROL, OUTPUT);
+  pinMode(CS1, OUTPUT);
+  pinMode(0, OUTPUT);
+  pinMode(1, OUTPUT);
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+  pinMode(7, OUTPUT);
+  pinMode(CESENSE, OUTPUT);
+  pinMode(CSNSENSE, OUTPUT);
+  pinMode(SAMPLE, INPUT);
+  pinMode(BUTTONINDICATOR, OUTPUT);
+  pinMode(ANALOG3, INPUT);
+
+  analogReadRes(10);      // set ADC resolution to this many bits
+  analogReadAveraging(1); // average this many readings
+
   //RF SETTINGS
   radio.begin(); //Starting the Wireless communication
   radio.setPALevel(RF24_PA_MAX);
@@ -47,6 +68,7 @@ void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
   radio.openWritingPipe(slaveAddress); //Setting the address where we will send the data
   radio.stopListening();               //This sets the module as transmitter
 
+  //initialise arrays
   for (int j = 0; j < AMOUNT_ARRAY; j++)
   {
     for (int i = 0; i < AMOUNT_FREQ_BINS; i++)
@@ -57,13 +79,16 @@ void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
       }
     }
   }
-
   for (int i = 0; i < AMOUNT_MOVING_AVG; i++)
   {
     moving_avg[i] = 0;
   }
 
   sampling_period_us = round(1000000 * (1.0 / SAMPLING_FREQUENCY)); //for the sampling frequency
+}
+
+void sense::run() //SWEEP DUURT 20.48 ms!!!!
+{
   while (1)
   {
     if (tijd + TIME_BETWEEN_FFT < millis())
@@ -73,11 +98,15 @@ void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
       if (succes == true)
       {
         dofft();
-        updateLED();
+#ifdef DEMPING
+        updateEnLED();
+#else
+        updateCorLED();
+#endif
         if (plotinterval >= 25) //plot the values once in 25 times;
         {
           plotinterval = 0;
-          fftPlot();/*
+          fftPlot(); /*
           averageEnergy();
           double peak = FFT.MajorPeak(vReal, SAMPLES, SAMPLING_FREQUENCY);
           Serial.print("piek: ");
@@ -92,7 +121,7 @@ void fft::runfft(byte state) //SWEEP DUURT 20.48 ms!!!!
   }
 }
 
-void fft::dofft()
+void sense::dofft()
 {
   for (int i = 0; i < SAMPLES; i++)
   {
@@ -109,7 +138,7 @@ void fft::dofft()
   FFT.ComplexToMagnitude(vReal, vImag, SAMPLES);
 }
 
-void fft::fftPlot()
+void sense::fftPlot()
 {
   //teller = 0;
   for (int i = 0; i < (SAMPLES / 2); i++)
@@ -127,7 +156,7 @@ void fft::fftPlot()
   //Serial.println(teller);
 }
 
-void fft::updateLED()
+void sense::updateEnLED()
 {
   /*for (int i = 0; i < (SAMPLES / 2); i++)
   {
@@ -146,7 +175,92 @@ void fft::updateLED()
   if (takesample)
   {
     knoptiming = millis();
-#ifndef DEMPING
+
+    int hoeveelste = 0;
+    totalenergy = 0;
+    for (int i = 0; i < (SAMPLES / 2); i++)
+    {
+      double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
+      if (frequency > MINFREQ && frequency < MAXFREQ)
+      { //410 frequency bins!!
+        samples[hoeveelste][0][0] = vReal[i];
+        //if (vReal[i] >= MIN_AMPLITUDE)
+        //{
+        totalenergy += vReal[i];
+        // }
+        hoeveelste++;
+      }
+    }
+    takesample = false;
+  }
+  else
+  {
+
+    int hoeveelste = 0;
+    double energy = 0;
+    for (int i = 0; i < (SAMPLES / 2); i++)
+    {
+      double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
+      if (frequency > MINFREQ && frequency < MAXFREQ)
+      {
+        //if (samples[hoeveelste][0][0] >= MIN_AMPLITUDE)
+        //{
+        energy += vReal[i];
+        //}
+        hoeveelste++;
+      }
+    }
+
+    totaal = 0;
+    demping = energy / totalenergy;
+    double tussen = demping;
+    //Serial.println(demping);
+    moving_avg[moving_pos] = tussen;
+
+    moving_pos++;
+    if (moving_pos >= AMOUNT_MOVING_AVG)
+    {
+      moving_pos = 0;
+    }
+
+    for (int i = 0; i < AMOUNT_MOVING_AVG; i++)
+    {
+      totaal += moving_avg[moving_pos];
+    }
+
+    PWM_value = totaal / AMOUNT_MOVING_AVG;
+    if (PWM_value >= 1)
+    {
+      PWM_value = 1;
+    }
+    int out = round(abs(log10(PWM_value) * 255)); //kan delen door log10(a) zodat bovenste log loga() word https://www.instagram.com/p/BthYeq_BsfK/?utm_source=ig_share_sheet&igshid=1fo84lib8xveu
+    if (out >= 255)
+    {
+      out = 255;
+    }
+    analogWrite(LEDPIN, out);
+  }
+}
+
+void sense::updateCorLED()
+{
+  /*for (int i = 0; i < (SAMPLES / 2); i++)
+  {
+    vReal[i] = 20 * log10(vReal[i] / 1500);
+  }*/
+  if (millis() > knoptiming + KNOPDEBOUNCE)
+  {
+    digitalWrite(BUTTONINDICATOR, LOW);
+  }
+  if (digitalRead(SAMPLE) && (millis() > knoptiming + KNOPDEBOUNCE) && takesample == false)
+  {
+    digitalWrite(BUTTONINDICATOR, HIGH);
+    takesample = true;
+    sample_number = 0;
+  }
+  if (takesample)
+  {
+    knoptiming = millis();
     for (int i = 0; i < (SAMPLES / 2); i++)
     {
       double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
@@ -180,30 +294,9 @@ void fft::updateLED()
       }
     }
     sample_number++;
-#endif
-
-#ifdef DEMPING
-    int hoeveelste = 0;
-    totalenergy = 0;
-    for (int i = 0; i < (SAMPLES / 2); i++)
-    {
-      double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
-      if (frequency > MINFREQ && frequency < MAXFREQ)
-      { //410 frequency bins!!
-        samples[hoeveelste][0][0] = vReal[i];
-        //if (vReal[i] >= MIN_AMPLITUDE)
-        //{
-        totalenergy += vReal[i];
-        // }
-        hoeveelste++;
-      }
-    }
-    takesample = false;
-#endif
   }
   else
   {
-#ifndef DEMPING
     double correlatie[AMOUNT_ARRAY][SAMPLES_PER_OUTPUT];
     for (int k = 0; k < AMOUNT_ARRAY; k++)
     {
@@ -263,57 +356,7 @@ void fft::updateLED()
   }
 }
 
-#endif
-
-#ifdef DEMPING
-int hoeveelste = 0;
-double energy = 0;
-for (int i = 0; i < (SAMPLES / 2); i++)
-{
-  double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
-  if (frequency > MINFREQ && frequency < MAXFREQ)
-  {
-    //if (samples[hoeveelste][0][0] >= MIN_AMPLITUDE)
-    //{
-    energy += vReal[i];
-    //}
-    hoeveelste++;
-  }
-}
-
-totaal = 0;
-demping = energy / totalenergy;
-double tussen = demping;
-//Serial.println(demping);
-moving_avg[moving_pos] = tussen;
-
-moving_pos++;
-if (moving_pos >= AMOUNT_MOVING_AVG)
-{
-  moving_pos = 0;
-}
-
-for (int i = 0; i < AMOUNT_MOVING_AVG; i++)
-{
-  totaal += moving_avg[moving_pos];
-}
-
-PWM_value = totaal / AMOUNT_MOVING_AVG;
-if (PWM_value >= 1)
-{
-  PWM_value = 1;
-}
-int out = round(abs(log10(PWM_value) * 255)); //kan delen door log10(a) zodat bovenste log loga() word https://www.instagram.com/p/BthYeq_BsfK/?utm_source=ig_share_sheet&igshid=1fo84lib8xveu
-if (out >= 255)
-{
-  out = 255;
-}
-analogWrite(LEDPIN2, out);
-}
-}
-#endif
-
-void fft::averageEnergy()
+void sense::averageEnergy()
 {
   double gemiddelddb = 0;
   int N = 0;
