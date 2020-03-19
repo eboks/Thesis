@@ -3,8 +3,8 @@
 
 // general settings
 //#define SWEEP  //Program sweep module
-//#define SENSE  //Program sense module
-//define CENTRAL  //Program central module
+#define SENSE  //Program sense module
+//#define CENTRAL  //Program central module
 //#define DEMPING    //energy mode
 
 //fft configurations
@@ -23,9 +23,12 @@
 #define MIN_AMPLITUDE 8000    //min amplitude to be valid
 #define AMOUNT_FREQ_BINS (MAXFREQ-MINFREQ)*SAMPLES/SAMPLING_FREQUENCY  //the amount of frequency 
 #define AMOUNT_MOVING_AVG 5
+#define SENSENODE 01          //sense nodes are 01, 02, 03, ...
+#define SWEEPNODE 011          //sweep nodes are 011, 012, 013, ...
 
 
 // I/O pins declarations
+#define ONBOARDLEDPIN 13 //Define the onboardledpin
 #define LEDPIN 22  //define the pin we use as output for the damping
 #define ANALOG3 17  //define analog read 9 pin
 #define CONTROL 4  //CTRL pin for waveform IC

@@ -1,8 +1,8 @@
 #include "sweep.h"
 
-RF24 radiomain(CESWEEP, CSNSWEEP); // CE, CSN
-const byte thisSlaveAddress[5] = {'R', 'x', 'A', 'A', 'A'};
-char startsweepmain[10] = "test";
+RF24 sweepradio(CESWEEP, CSNSWEEP); // CE, CSN
+RF24Network sweepnetwork(sweepradio);    // Include the radio in the network
+const uint16_t this_node = SWEEPNODE; // Address of our node in Octal format ( 04,031, etc)
 unsigned long currenttime = 0;
 
 void blink()
@@ -14,7 +14,6 @@ void blink()
 
 void sweep::setup()
 {
-    pinMode(LEDPIN, OUTPUT);
     pinMode(CONTROL, OUTPUT);
     pinMode(CS1, OUTPUT);
     pinMode(0, OUTPUT);
@@ -63,13 +62,11 @@ void sweep::setup()
     SPI.endTransaction();
     SPI.end();
 
-    radiomain.begin();
-    radiomain.setDataRate(RF24_2MBPS);
-    radiomain.setPALevel(RF24_PA_MAX);
-    radiomain.setChannel(10);
-    radiomain.openReadingPipe(1, thisSlaveAddress); //Setting the address at which we will receive the data
-    //radiomain.setPALevel(RF24_PA_MAX);     //You can set this as minimum or maximum depending on the distance between the transmitter and receiver.
-    radiomain.startListening(); //This sets the module as receiver
+    SPI.begin();
+    sweepradio.begin();
+    sweepnetwork.begin(11, this_node); //(channel, node address)
+    sweepradio.setDataRate(RF24_2MBPS);
+    sweepradio.setPALevel(RF24_PA_MAX);
 
     attachInterrupt(digitalPinToInterrupt(SYNCOUT), blink, RISING);
 }
@@ -78,22 +75,24 @@ void sweep::run()
 {
     while (1)
     {
-        if (radiomain.available()) //Looking for the data.
+        sweepnetwork.update();
+        if (sweepnetwork.available()) //Looking for the data.
         {
+            RF24NetworkHeader header;
+            unsigned long incomingData;
             digitalWrite(CONTROL, HIGH);
             delay(1);
             digitalWrite(CONTROL, LOW);
-            radiomain.read(&startsweepmain, sizeof(startsweepmain));
+            sweepnetwork.read(header, &incomingData, sizeof(incomingData)); // Read the incoming data
             currenttime = millis();
         }
         else if (currenttime + 500 < millis())
         {
-            radiomain.begin();
-            radiomain.setDataRate(RF24_2MBPS);
-            radiomain.setPALevel(RF24_PA_MAX);
-            radiomain.setChannel(10);
-            radiomain.openReadingPipe(1, thisSlaveAddress); //Setting the address at which we will receive the data
-            radiomain.startListening();                     //This sets the module as receiver
+            SPI.begin();
+            sweepradio.begin();
+            sweepnetwork.begin(11, this_node); //(channel, node address)
+            sweepradio.setDataRate(RF24_2MBPS);
+            sweepradio.setPALevel(RF24_PA_MAX);
             currenttime = millis();
         }
     }

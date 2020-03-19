@@ -34,8 +34,10 @@ int sample_number = 0;
 unsigned int tijd = 0;
 
 RF24 radio(CESENSE, CSNSENSE); // CE, CSN
-const byte slaveAddress[5] = {'R', 'x', 'A', 'A', 'A'};
-char startsweep[10] = "hey";
+RF24Network network(radio);
+const uint16_t this_node = SENSENODE; // Address of this node in Octal format ( 04,031, etc)
+const uint16_t sweepnode = SWEEPNODE;
+unsigned long angleValue = 0;
 
 void sense::setup()
 {
@@ -60,13 +62,12 @@ void sense::setup()
   analogReadAveraging(1); // average this many readings
 
   //RF SETTINGS
-  radio.begin(); //Starting the Wireless communication
+  SPI.begin();
+  radio.begin();                //Starting the Wireless communication
+  network.begin(11, this_node); //(channel, node address)
   radio.setPALevel(RF24_PA_MAX);
   radio.setDataRate(RF24_2MBPS);
-  radio.setChannel(10);
-  radio.setRetries(3, 10);             // delay, count
-  radio.openWritingPipe(slaveAddress); //Setting the address where we will send the data
-  radio.stopListening();               //This sets the module as transmitter
+  radio.setRetries(3, 10); // delay, count
 
   //initialise arrays
   for (int j = 0; j < AMOUNT_ARRAY; j++)
@@ -91,10 +92,12 @@ void sense::run() //SWEEP DUURT 20.48 ms!!!!
 {
   while (1)
   {
+    network.update();
     if (tijd + TIME_BETWEEN_FFT < millis())
-    { //update every ... seconds
+    {                                   //update every ... seconds
+      RF24NetworkHeader header(sweepnode); // (Address where the data is going)
       tijd = millis();
-      boolean succes = radio.write(&startsweep, sizeof(startsweep));
+      boolean succes = network.write(header, &angleValue, sizeof(angleValue)); // Send the data
       if (succes == true)
       {
         dofft();

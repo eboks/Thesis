@@ -6,10 +6,11 @@ central mycentral; //create an instance of the class central
 
 void setup()
 {
+  pinMode(ONBOARDLEDPIN, OUTPUT);
   Serial.begin(115200); // baud rate is ignored with Teensy USB ACM i/o
-  digitalWrite(LEDPIN, HIGH);
+  digitalWrite(ONBOARDLEDPIN, HIGH);
   delay(2000); // LED on for 2 second
-  digitalWrite(LEDPIN, LOW);
+  digitalWrite(ONBOARDLEDPIN, LOW);
   delay(1000); // wait in case serial monitor still opening
   #ifdef SWEEP
   mysweep.setup();
