@@ -16,24 +16,12 @@ void sweep::setup()
 {
     pinMode(CONTROL, OUTPUT);
     pinMode(CS1, OUTPUT);
-    pinMode(0, OUTPUT);
-    pinMode(1, OUTPUT);
-    pinMode(2, OUTPUT);
-    pinMode(3, OUTPUT);
-    pinMode(4, OUTPUT);
-    pinMode(5, OUTPUT);
-    pinMode(6, OUTPUT);
-    pinMode(7, OUTPUT);
     pinMode(TRISTATE, OUTPUT);
     pinMode(CESWEEP, OUTPUT);
     pinMode(CSNSWEEP, OUTPUT);
-    pinMode(CESENSE, OUTPUT);
-    pinMode(CSNSENSE, OUTPUT);
-    pinMode(SYNCOUT, OUTPUT);
     pinMode(SYNCOUT, INPUT);
     pinMode(INTERRUPT, OUTPUT);
 
-    digitalWrite(TRISTATE, HIGH); //has to be high for the oscillator to be on
 
     digitalWrite(TRISTATE, HIGH); //has to be high for the oscillator to be on
     digitalWrite(CS1, HIGH);
@@ -42,26 +30,18 @@ void sweep::setup()
     SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE1)); //check datasheet, max freq 10Mhz, MSBFIRST mode, CPOL=0 and CPHA =1 => mode 1
     digitalWrite(CS1, LOW);
     spitransfer(0b0000011010011111); //control register
-
     spitransfer(0b0001101111111111); //#increments
-    /*spitransfer(0b0010000000000011); //delta f lower bits
-    spitransfer(0b0011000000000000); //delta f higher bits*/
-    spitransfer(0b0010000000000011); //delta f lower bits
+    spitransfer(0b0010000000000001); //delta f lower bits
     spitransfer(0b0011000000000000); //delta f higher bits
     spitransfer(0b0110000101011010); //increment interval
-
     spitransfer(0b1000000000000000); //burst interval NOT NEEDED
-
-    spitransfer(0b1100011100000000); //start f lower bits  100 1110 0010 0000 //25-50kHz
-    spitransfer(0b1101000000000001);
-    /*spitransfer(0b1100111100000000); //start f lower bits  100 1110 0010 0000 //25-50kHz
-  spitransfer(0b1101000000000001); //start f higher bits*/
-
+    spitransfer(0b1100000100000000); //start f lower bits  
+    spitransfer(0b1101000000000010); //start f higher bits
     digitalWrite(CS1, HIGH);
     SPI.endTransaction();
     SPI.end();
 
-    SPI.begin();
+    SPI.begin(); //spi for the communication
     sweepradio.begin();
     sweepnetwork.begin(11, this_node); //(channel, node address)
     sweepradio.setDataRate(RF24_2MBPS);

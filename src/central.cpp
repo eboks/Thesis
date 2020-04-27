@@ -1,7 +1,5 @@
 #include "central.h"
 
-
-
 RF24 centralradio(10, 9);                 // nRF24L01 (CE,CSN)
 RF24Network centralnetwork(centralradio); // Include the radio in the network
 const uint16_t central_node = 00;         // Address of this node in Octal format ( 04,031, etc)

@@ -132,7 +132,7 @@ void sense::dofft()
   for (int i = 0; i < SAMPLES; i++)
   {
     microseconds = micros(); //Overflows after around 70 minutes!
-    vReal[i] = analogRead(ANALOG3);
+    vReal[i] = analogRead(ANALOG3)*3.3/1024;
     vImag[i] = 0;
     while (micros() < (microseconds + sampling_period_us))
     { //To set sampling frequency
@@ -150,12 +150,11 @@ void sense::fftPlot()
   for (int i = 0; i < (SAMPLES / 2); i++)
   {
     /*View all these three lines in serial terminal to see which frequencies has which amplitudes*/
-    double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
-    if (frequency < 80000) //840 samples bij 41000 || 1639  bij 80000
+    if (i>500&&i<700) //840 samples bij 41000 || 1639  bij 80000
     {                      //only plot the usefull range
       //Serial.print(i);
       //Serial.print(": ");
-      Serial.println(vReal[i], 1); //View only this line in serial plotter to visualize the bins, 1 is 1 number after the colon
+      Serial.println(vReal[i]/4096*1000, 1); //View only this line in serial plotter to visualize the bins, 1 is 1 number after the colon
       //teller++;
     }
   }
