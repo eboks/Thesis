@@ -30,7 +30,6 @@ void sweep::setup()
     pinMode(CESENSE, OUTPUT);
     pinMode(CSNSENSE, OUTPUT);
     pinMode(SYNCOUT, OUTPUT);
-    pinMode(BUTTONINDICATOR, OUTPUT);
     pinMode(SYNCOUT, INPUT);
     pinMode(INTERRUPT, OUTPUT);
 
@@ -46,7 +45,7 @@ void sweep::setup()
 
     spitransfer(0b0001101111111111); //#increments
     /*spitransfer(0b0010000000000011); //delta f lower bits
-  spitransfer(0b0011000000000000); //delta f higher bits*/
+    spitransfer(0b0011000000000000); //delta f higher bits*/
     spitransfer(0b0010000000000011); //delta f lower bits
     spitransfer(0b0011000000000000); //delta f higher bits
     spitransfer(0b0110000101011010); //increment interval
@@ -79,8 +78,8 @@ void sweep::run()
         if (sweepnetwork.available()) //Looking for the data.
         {
             RF24NetworkHeader header;
-            unsigned long incomingData;
-            digitalWrite(CONTROL, HIGH);
+            unsigned int incomingData;
+            digitalWrite(CONTROL, HIGH); //start the sweep
             delay(1);
             digitalWrite(CONTROL, LOW);
             sweepnetwork.read(header, &incomingData, sizeof(incomingData)); // Read the incoming data

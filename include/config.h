@@ -7,6 +7,10 @@
 //#define CENTRAL  //Program central module
 //#define DEMPING    //energy mode
 
+//node program settings
+#define SENSENODE 01          //sense nodes are 01, 02, 03, ...
+#define SWEEPNODE 011          //sweep nodes are 011, 021, 031
+
 //fft configurations
 #define SAMPLES 4096            //Must be a power of 2
 #define SAMPLING_FREQUENCY 200000  //total sampling time = SAMPLES/SAMPLING_FREQUENCY
@@ -23,23 +27,29 @@
 #define MIN_AMPLITUDE 8000    //min amplitude to be valid
 #define AMOUNT_FREQ_BINS (MAXFREQ-MINFREQ)*SAMPLES/SAMPLING_FREQUENCY  //the amount of frequency 
 #define AMOUNT_MOVING_AVG 5
-#define SENSENODE 01          //sense nodes are 01, 02, 03, ...
-#define SWEEPNODE 011          //sweep nodes are 011, 012, 013, ...
+
+//general I/O pins declarations
+#define ONBOARDLEDPIN 13 //Define the onboardledpin (also the csk of SPI)
 
 
-// I/O pins declarations
-#define ONBOARDLEDPIN 13 //Define the onboardledpin
-#define LEDPIN 22  //define the pin we use as output for the damping
-#define ANALOG3 17  //define analog read 9 pin
+// I/O pins declarations for sweep
 #define CONTROL 4  //CTRL pin for waveform IC
 #define CS1 6     //CS pin of SPI
-#define SAMPLE 8  //input pin for button to make a sample
 #define CESWEEP 16     //CE pin of RF
 #define CSNSWEEP 15     //CSN pin of 
-#define CESENSE 10     //CE pin of RF
-#define CSNSENSE 16     //CSN pin of RF
-#define BUTTONINDICATOR 0  //indicator LED
 #define TRISTATE 23         //has to be high for the sweep oscillator to be on
 #define SYNCOUT 22          //needed to end the sweep
 #define INTERRUPT 3         //needed to end the sweep
+
+// I/O pins declarations for sense
+#define CESENSE 10     //CE pin of RF
+#define CSNSENSE 16     //CSN pin of RF
+#define BUTTONINDICATOR 0  //indicator LED
+#define ANALOG3 17  //define analog read 9 pin
+#define SAMPLE 8  //input pin for button to make a sample
+#define LEDPIN 22  //define the pin we use as output for the damping
+
+// I/O pins declarations for central
+
+
 #endif

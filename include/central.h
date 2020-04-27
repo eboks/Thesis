@@ -7,14 +7,17 @@
 #include <RF24.h>
 #include <RF24Network.h>
 #include <SPI.h>
+#include <Ticker.h>  
 
 class central{
-
 // setup the central
 public: void setup();
 
 // Run the central
 public: void run();
+
+// timer
+private: void sendStartSignal();
 
 };
 #endif 

@@ -16,7 +16,7 @@ int counter2 = 0;
 int minimum1 = 0;
 int minimum2 = 0;
 int vorige = 0;
-int output = 0;
+unsigned int output = 0;
 int plotinterval = 0;
 int aantalkeren = 0;
 double totalenergy = 0;
@@ -37,7 +37,7 @@ RF24 radio(CESENSE, CSNSENSE); // CE, CSN
 RF24Network network(radio);
 const uint16_t this_node = SENSENODE; // Address of this node in Octal format ( 04,031, etc)
 const uint16_t sweepnode = SWEEPNODE;
-unsigned long angleValue = 0;
+unsigned int dummydata = 0;
 
 void sense::setup()
 {
@@ -93,11 +93,14 @@ void sense::run() //SWEEP DUURT 20.48 ms!!!!
   while (1)
   {
     network.update();
-    if (tijd + TIME_BETWEEN_FFT < millis())
-    {                                   //update every ... seconds
-      RF24NetworkHeader header(sweepnode); // (Address where the data is going)
-      tijd = millis();
-      boolean succes = network.write(header, &angleValue, sizeof(angleValue)); // Send the data
+    if (network.available()) //check if the central has send something
+    { //update every ... seconds
+      RF24NetworkHeader header;
+      unsigned int buttonState;
+      network.read(header, &buttonState, sizeof(buttonState)); // Read the incoming data
+
+      RF24NetworkHeader header1(sweepnode);                     // adress of the according sweep
+      boolean succes = network.write(header1, &dummydata, sizeof(dummydata)); // Send dummy data to start the sweep
       if (succes == true)
       {
         dofft();
@@ -236,12 +239,14 @@ void sense::updateEnLED()
     {
       PWM_value = 1;
     }
-    int out = round(abs(log10(PWM_value) * 255)); //kan delen door log10(a) zodat bovenste log loga() word https://www.instagram.com/p/BthYeq_BsfK/?utm_source=ig_share_sheet&igshid=1fo84lib8xveu
+    unsigned int out = round(abs(log10(PWM_value) * 255)); //kan delen door log10(a) zodat bovenste log loga() word https://www.instagram.com/p/BthYeq_BsfK/?utm_source=ig_share_sheet&igshid=1fo84lib8xveu
     if (out >= 255)
     {
       out = 255;
     }
-    analogWrite(LEDPIN, out);
+    RF24NetworkHeader header(00);                     // adress of the according sweep
+    network.write(header, &out, sizeof(out)); // Send dummy data to start the sweep
+    //analogWrite(LEDPIN, out);
   }
 }
 
@@ -327,7 +332,7 @@ void sense::updateCorLED()
         correlatie[k][j] = teller / sqrt(noemer1 * noemer2); //bereken de correlatie coëfficient
       }
     }
-    digitalWrite(output, LOW);
+    //digitalWrite(output, LOW);
     minimum1 = 0;
     minimum2 = 0;
     for (int k = 0; k < AMOUNT_ARRAY; k++)
@@ -355,7 +360,9 @@ void sense::updateCorLED()
       output = minimum1;
       aantalkeren = 0;
     }
-    digitalWrite(output, HIGH);
+    //digitalWrite(output, HIGH);
+    RF24NetworkHeader header(00);                     // adress of the central
+    network.write(header, &output, sizeof(output)); // Send the output to the central
   }
 }
 
