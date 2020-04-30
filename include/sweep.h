@@ -19,5 +19,6 @@ public: void run();
 // put enable pin low and transfer data via spi
 private: void spitransfer(int code);
 
+
 };
 #endif 

@@ -10,8 +10,8 @@
 #define NEW
 
 //node program settings
-#define SENSENODE 01          //sense nodes are 01, 02, 03, ...
-#define SWEEPNODE 011          //sweep nodes are 011, 021, 031
+#define SENSENODE 001          //sense nodes are 01, 02, 03, ...
+#define SWEEPNODE 051          //sweep nodes are 011, 021, 031
 
 //fft configurations
 #define SAMPLES 4096            //Must be a power of 2

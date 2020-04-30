@@ -25,37 +25,21 @@ double PWM_value = 255;
 double moving_avg[AMOUNT_MOVING_AVG];
 int moving_pos = 0;
 double totaal = 0;
-
 int teller = 0;
-
 boolean takesample = false;
 int sample_number = 0;
-
 unsigned int tijd = 0;
-
 RF24 radio(CESENSE, CSNSENSE); // CE, CSN
 RF24Network network(radio);
 const uint16_t this_node = SENSENODE; // Address of this node in Octal format ( 04,031, etc)
 const uint16_t sweepnode = SWEEPNODE;
 unsigned int dummydata = 0;
 
-void sense::setup()
-{
-  pinMode(LEDPIN, OUTPUT);
+void sense::setup(){
   pinMode(CONTROL, OUTPUT);
   pinMode(CS1, OUTPUT);
-  pinMode(0, OUTPUT);
-  pinMode(1, OUTPUT);
-  pinMode(2, OUTPUT);
-  pinMode(3, OUTPUT);
-  pinMode(4, OUTPUT);
-  pinMode(5, OUTPUT);
-  pinMode(6, OUTPUT);
-  pinMode(7, OUTPUT);
   pinMode(CESENSE, OUTPUT);
   pinMode(CSNSENSE, OUTPUT);
-  pinMode(SAMPLE, INPUT);
-  pinMode(BUTTONINDICATOR, OUTPUT);
   pinMode(ANALOG3, INPUT);
 
   analogReadRes(10);      // set ADC resolution to this many bits
@@ -70,99 +54,61 @@ void sense::setup()
   radio.setRetries(3, 10); // delay, count
 
   //initialise arrays
-  for (int j = 0; j < AMOUNT_ARRAY; j++)
-  {
-    for (int i = 0; i < AMOUNT_FREQ_BINS; i++)
-    {
-      for (int k = 0; k < SAMPLES_PER_OUTPUT; k++)
-      {
-        samples[i][j][k] = -1000000;
-      }
+  for (int j = 0; j < AMOUNT_ARRAY; j++){
+    for (int i = 0; i < AMOUNT_FREQ_BINS; i++){
+      for (int k = 0; k < SAMPLES_PER_OUTPUT; k++) samples[i][j][k] = -1000000;
     }
   }
-  for (int i = 0; i < AMOUNT_MOVING_AVG; i++)
-  {
-    moving_avg[i] = 0;
-  }
+
+  for (int i = 0; i < AMOUNT_MOVING_AVG; i++) moving_avg[i] = 0;
 
   sampling_period_us = round(1000000 * (1.0 / SAMPLING_FREQUENCY)); //for the sampling frequency
 }
 
-void sense::run() //SWEEP DUURT 20.48 ms!!!!
-{
+void sense::run(){ //SWEEP DUURT 20.48 ms!!!!
   while (1)
   {
     network.update();
-    if (network.available()) //check if the central has send something
-    { //update every ... seconds
-      RF24NetworkHeader header;
-      unsigned int buttonState;
-      network.read(header, &buttonState, sizeof(buttonState)); // Read the incoming data
+    
+    if (network.available()){                                                 //check if the central has send something 
 
-      RF24NetworkHeader header1(sweepnode);                     // adress of the according sweep
+      RF24NetworkHeader header;
+      unsigned int data;
+      network.read(header, &data, sizeof(data));                              // Read the incoming data
+      
+      RF24NetworkHeader header1(sweepnode);                                   // adress of the according sweep
       boolean succes = network.write(header1, &dummydata, sizeof(dummydata)); // Send dummy data to start the sweep
-      if (succes == true)
+      if (succes)
       {
         dofft();
-#ifdef DEMPING
-        updateEnLED();
-#else
-        updateCorLED();
-#endif
-        if (plotinterval >= 25) //plot the values once in 25 times;
-        {
-          plotinterval = 0;
-          fftPlot(); /*
-          averageEnergy();
-          double peak = FFT.MajorPeak(vReal, SAMPLES, SAMPLING_FREQUENCY);
-          Serial.print("piek: ");
-          Serial.println(peak);
-          int bin = (peak*SAMPLES)/SAMPLING_FREQUENCY;
-          Serial.print("sterkte: ");
-          Serial.println(vReal[bin]);*/
-        }
+        //updateEnLED();
+        //updateCorLED();
+        fftPlot();
+        averageEnergy();
       }
-      plotinterval++;
     }
   }
 }
 
-void sense::dofft()
-{
-  for (int i = 0; i < SAMPLES; i++)
-  {
-    microseconds = micros(); //Overflows after around 70 minutes!
+void sense::dofft(){
+  for (int i = 0; i < SAMPLES; i++){
+    microseconds = micros();                                  //Overflows after around 70 minutes!
     vReal[i] = analogRead(ANALOG3)*3.3/1024;
     vImag[i] = 0;
-    while (micros() < (microseconds + sampling_period_us))
-    { //To set sampling frequency
-    }
+    while (micros() < (microseconds + sampling_period_us)){}  //To set sampling frequency
   }
+
   /*FFT*/
   FFT.Windowing(vReal, SAMPLES, FFT_WIN_TYP_RECTANGLE, FFT_FORWARD);
   FFT.Compute(vReal, vImag, SAMPLES, FFT_FORWARD);
   FFT.ComplexToMagnitude(vReal, vImag, SAMPLES);
 }
 
-void sense::fftPlot()
-{
-  //teller = 0;
-  for (int i = 0; i < (SAMPLES / 2); i++)
-  {
-    /*View all these three lines in serial terminal to see which frequencies has which amplitudes*/
-    if (i>500&&i<700) //840 samples bij 41000 || 1639  bij 80000
-    {                      //only plot the usefull range
-      //Serial.print(i);
-      //Serial.print(": ");
-      Serial.println(vReal[i]/4096*1000, 1); //View only this line in serial plotter to visualize the bins, 1 is 1 number after the colon
-      //teller++;
-    }
-  }
-  //Serial.println(teller);
+void sense::fftPlot(){
+  for (int i = 500; i < 700; i++) Serial.println(vReal[i]*1000/4096, 1);
 }
 
-void sense::updateEnLED()
-{
+void sense::updateEnLED(){
   /*for (int i = 0; i < (SAMPLES / 2); i++)
   {
     vReal[i] = 20 * log10(vReal[i] / 1500);
@@ -249,8 +195,7 @@ void sense::updateEnLED()
   }
 }
 
-void sense::updateCorLED()
-{
+void sense::updateCorLED(){
   /*for (int i = 0; i < (SAMPLES / 2); i++)
   {
     vReal[i] = 20 * log10(vReal[i] / 1500);
@@ -365,19 +310,12 @@ void sense::updateCorLED()
   }
 }
 
-void sense::averageEnergy()
-{
+void sense::averageEnergy(){
   double gemiddelddb = 0;
-  int N = 0;
-  for (int i = 0; i < (SAMPLES / 2); i++)
-  {
-    double frequency = (i * 1.0 * SAMPLING_FREQUENCY) / SAMPLES;
-    if (frequency > MINFREQ && frequency < MAXFREQ)
-    {
-      gemiddelddb += vReal[i];
-      N++;
-    }
-  }
-  gemiddelddb /= N;
-  //Serial.println(gemiddelddb);
+  for (int i = 500; i < 700; i++) gemiddelddb += vReal[i]*1000/4096;
+  gemiddelddb = gemiddelddb/200;
+  output = gemiddelddb;
+
+  RF24NetworkHeader header(00);                   // adress of the central
+  network.write(header, &output, sizeof(output)); // Send the output to the central
 }
