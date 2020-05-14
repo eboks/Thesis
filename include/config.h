@@ -3,15 +3,16 @@
 
 // general settings
 //#define SWEEP  //Program sweep module
-#define SENSE  //Program sense module
-//#define CENTRAL  //Program central module
+//#define SENSE  //Program sense module
+#define CENTRAL  //Program central module
 //#define DEMPING    //energy mode
-//#define OLD
-#define NEW
+#define OLD
+//#define NEW
 
 //node program settings
 #define SENSENODE 001          //sense nodes are 01, 02, 03, ...
 #define SWEEPNODE 051          //sweep nodes are 011, 021, 031
+#define TOTALCOUPLES 2
 
 //fft configurations
 #define SAMPLES 4096            //Must be a power of 2

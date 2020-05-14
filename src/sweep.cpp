@@ -56,7 +56,7 @@ void sweep::run()
         sweepnetwork.update();
         if (sweepnetwork.available()){                                       //Looking for the data.
             RF24NetworkHeader header;
-            unsigned int incomingData;
+            byte incomingData;
             digitalWrite(CONTROL, HIGH);                                    //start the sweep
             delay(1);
             digitalWrite(CONTROL, LOW);

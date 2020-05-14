@@ -33,7 +33,7 @@ RF24 radio(CESENSE, CSNSENSE); // CE, CSN
 RF24Network network(radio);
 const uint16_t this_node = SENSENODE; // Address of this node in Octal format ( 04,031, etc)
 const uint16_t sweepnode = SWEEPNODE;
-unsigned int dummydata = 0;
+byte dummydata = 0;
 
 void sense::setup(){
   pinMode(CONTROL, OUTPUT);
@@ -71,7 +71,7 @@ void sense::run(){ //SWEEP DUURT 20.48 ms!!!!
     network.update();
     
     if (network.available()){                                                 //check if the central has send something 
-
+      //Serial.println(millis());
       RF24NetworkHeader header;
       unsigned int data;
       network.read(header, &data, sizeof(data));                              // Read the incoming data
@@ -85,6 +85,7 @@ void sense::run(){ //SWEEP DUURT 20.48 ms!!!!
         //updateCorLED();
         fftPlot();
         averageEnergy();
+        //Serial.println(millis());
       }
     }
   }
